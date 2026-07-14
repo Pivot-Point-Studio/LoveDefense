@@ -1,133 +1,54 @@
 # Love Defense
 
-상대의 진짜 의도를 맞히며 서로의 연애 커뮤니케이션 스타일을 이해하는 채팅 디펜스 게임입니다. React와 Vite 기반의 단일 페이지 앱으로 랜딩, 홈, 상황 선택, 채팅 플레이, 결과, 리그, 프로필 흐름을 제공합니다.
+기존 연애 대화 디펜스 게임을 유지하면서 사용자·게임·Stage·추천 표현·랭킹을 Supabase에 저장하는 Vite 앱입니다. 기존 UI와 게임 선택 방식은 유지되고, 서버 연결이 실패한 저장 작업은 `loveDefense.pendingSyncQueue`에 임시 보관됩니다.
 
-## 기술 스택
-
-- React
-- Vite
-- JavaScript
-- Supabase
-- Vercel
-- Node.js 24.x
-- npm 12.x
-
-## 시작하기
-
-### 1. 저장소 클론
-
-```bash
-git clone <https://github.com/Pivot-Point-Studio/LoveDefense.git>
-cd LoveDefense
-```
-
-### 2. Node.js 버전 확인
-
-Node.js 24.x와 npm 12.x 사용을 권장합니다.
-
-```bash
-node --version
-npm --version
-```
-
-### 3. 의존성 설치
-
-`package-lock.json`에 기록된 버전으로 설치합니다.
+## 실행
 
 ```bash
 npm ci
-```
-
-### 4. 환경변수 설정
-
-`.env.example`을 복사해 `.env` 파일을 생성합니다.
-
-```bash
-cp .env.example .env
-```
-
-`.env`에 Supabase 프로젝트 정보를 입력합니다.
-
-```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
-
-`.env` 파일은 보안상 Git에 커밋하지 않습니다.
-
-### 5. 개발 서버 실행
-
-```bash
+copy .env.example .env
 npm run dev
 ```
 
-기본적으로 `http://localhost:5173`에서 실행됩니다.
+`.env`에는 공개용 값만 입력합니다.
 
-## npm 스크립트
-
-| 명령어 | 설명 |
-| --- | --- |
-| `npm run dev` | 개발 서버 실행 |
-| `npm run build` | 프로덕션 빌드 |
-| `npm run preview` | 빌드 결과 로컬 확인 |
-| `npm run lint` | ESLint 검사 |
-
-## Supabase
-
-Supabase 클라이언트는 [src/lib/supabase.js](src/lib/supabase.js)에서 생성합니다.
-
-```js
-import { supabase } from './lib/supabase'
+```env
+VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
 ```
 
-Supabase의 `URL`과 `anon key`는 Vite 환경변수인 `VITE_` 접두사를 사용해야 합니다.
+## Supabase 설정
 
-서비스 롤 키나 기타 비밀 키는 프론트엔드 환경변수에 저장하지 않습니다.
+1. Supabase 프로젝트를 만들고 Anonymous Sign-Ins를 활성화합니다.
+2. SQL Editor에서 `supabase/schema.sql` → `policies.sql` → `functions.sql` 순서로 실행합니다.
+3. Project URL과 Publishable/anon key를 `.env`에 입력합니다.
+4. `npm run dev`로 실행하고 브라우저 콘솔을 확인합니다.
+5. 두 브라우저에서 플레이하면 공개 랭킹이 공유됩니다.
 
-Supabase 환경변수가 없어도 목업 데이터와 localStorage로 게임을 실행할 수 있습니다. Supabase 연결은 `src/lib/supabase.js`의 클라이언트 경계에 두어 이후 사용자 인증과 결과 동기화를 확장할 수 있게 했습니다.
+`service_role`, DB 비밀번호, OpenAI 키는 브라우저에 넣지 않습니다. 익명 인증은 같은 브라우저 세션을 식별자로 사용합니다. 브라우저 데이터를 지우면 기존 익명 계정을 복구하기 어려울 수 있으므로 실제 서비스에서는 이메일/소셜 계정 연결을 추가해야 합니다.
 
-## 배포
+## 실제 localStorage 조사 및 이전
 
-Vercel에서 Git 저장소를 연결하면 기본 설정으로 배포할 수 있습니다.
+현재 발견된 키는 다음과 같습니다.
 
-- Build Command: `npm run build`
-- Output Directory: `dist`
-- Install Command: `npm ci`
+- `loveDefense.userProfile`: `{ nickname, mbti, expression, relationshipLength }` → `profiles`
+- `loveDefense.gameHistory`: 결과 배열 `{ score, stage, success, scenario, createdAt }` → `game_sessions`
+- `loveDefense.savedExpressions`: 추천 표현 문자열 배열 → `saved_expressions`
 
-Vercel 프로젝트 설정의 Environment Variables에 다음 값을 등록합니다.
+인증 후 `localDataMigrationService`가 한 번만 이전하고 `loveDefense.serverMigrationVersion=1`을 기록합니다. 성공 전에는 원본을 삭제하지 않으며 각 키의 `.backup.v1` 백업을 남깁니다. 서버 정상 상태에서는 화면 데이터가 서버 조회 결과를 우선합니다. 계속 남는 localStorage는 UI/비상 복구 목적의 `loveDefense.pendingSyncQueue`, migration 버전, 백업뿐입니다.
 
-```text
-VITE_SUPABASE_URL
-VITE_SUPABASE_ANON_KEY
-```
+## 구조
 
-`vercel.json`에는 React SPA 라우팅을 위한 rewrite 설정이 포함되어 있습니다.
+- `src/services`: Supabase 단일 클라이언트, 익명 인증, 마이그레이션, 오프라인 큐
+- `src/repositories`: 페이지에서 직접 `supabase.from`을 호출하지 않도록 한 저장소 계층
+- `supabase/`: 스키마, RLS, leaderboard RPC, 설정 문서
+- `tests-server.html`: 개발용 기본 인증/프로필 저장 테스트
 
-## 코드 검사 및 빌드
-
-커밋 또는 Pull Request 전에 다음 명령을 실행합니다.
+## 검증
 
 ```bash
 npm run lint
 npm run build
 ```
 
-## 디렉터리 구조
-
-```text
-.
-├─ src/
-│  ├─ lib/
-│  │  ├─ supabase.js    # Supabase 클라이언트
-│  │  └─ storage.js     # localStorage 기반 사용자/플레이 기록
-│  ├─ data/
-│  │  └─ scenarios.js   # 목업 대화 상황과 선택지
-│  ├─ App.jsx           # 애플리케이션 루트 컴포넌트
-│  ├─ index.css         # 전역 스타일
-│  └─ main.jsx          # 애플리케이션 진입점
-├─ .env.example         # 환경변수 예시
-├─ eslint.config.js      # ESLint 설정
-├─ vercel.json           # Vercel SPA 설정
-├─ vite.config.js        # Vite 설정
-└─ package.json
-```
+테스트용 프로필은 닉네임에 `test-`를 포함합니다. SQL Editor에서 현재 익명 `auth.users.id`에 연결된 `profiles`, `leaderboard_entries` 등을 확인 후 삭제하세요. 운영 데이터로 테스트하지 마세요.
