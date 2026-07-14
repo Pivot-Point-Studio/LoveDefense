@@ -1,0 +1,7 @@
+const normalize = (text = "") => text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+const tokens = (text) => new Set(normalize(text).split(/\s+/).filter((token) => token.length > 1));
+export const stageFingerprint = (stage) => [stage.title, stage.contextSummary ?? stage.summary, stage.hiddenEmotion, stage.hiddenNeed, stage.openingLine ?? stage.messages?.[0]?.text].map(normalize).join("|");
+export function similarity(left, right) { const a = tokens(left); const b = tokens(right); if (!a.size || !b.size) return 0; const common = [...a].filter((x) => b.has(x)).length; return common / (a.size + b.size - common); }
+export function isDuplicate(stage, recent = [], threshold = 0.72) { const fp = stageFingerprint(stage); return recent.some((item) => similarity(fp, item.fingerprint ?? stageFingerprint(item)) >= threshold); }
+export function rememberStage(stage) { const key = "loveDefense.recentScenarios"; const current = (() => { try { return JSON.parse(localStorage.getItem(key) ?? "[]"); } catch { return []; } })(); const next = [{ title: stage.title, contextSummary: stage.contextSummary ?? stage.summary, openingLine: stage.openingLine ?? stage.messages?.[0]?.text, fingerprint: stageFingerprint(stage), hiddenEmotion: stage.hiddenEmotion, hiddenNeed: stage.hiddenNeed, createdAt: new Date().toISOString() }, ...current].slice(0, 30); localStorage.setItem(key, JSON.stringify(next)); return next; }
+export function loadRecentStages() { try { return JSON.parse(localStorage.getItem("loveDefense.recentScenarios") ?? "[]"); } catch { return []; } }

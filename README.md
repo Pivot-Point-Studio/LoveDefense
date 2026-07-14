@@ -51,4 +51,19 @@ npm run lint
 npm run build
 ```
 
+## OpenAI 시나리오 생성 설정
+
+게임은 `src/services/scenarioProviderFactory.js`를 통해 OpenAI 공급자를 먼저 사용하고, Supabase 미설정·15초 timeout·호출/검증 실패 시 로컬 `TemplateScenarioProvider`로 자동 전환합니다. 선택지를 누를 때 OpenAI를 다시 호출하지 않으며, 한 Stage 생성 시 한 번만 호출합니다.
+
+OpenAI 키는 브라우저 환경변수나 Git 저장소에 넣지 마세요. Supabase CLI로 프로젝트에 직접 Secret을 등록합니다.
+
+```bash
+supabase login
+supabase link --project-ref YOUR_PROJECT_REF
+supabase secrets set OPENAI_API_KEY=YOUR_OPENAI_KEY OPENAI_MODEL=YOUR_MODEL_NAME
+supabase functions deploy generate-stage
+```
+
+`OPENAI_MODEL`은 프로젝트에서 사용할 Responses API 지원 모델명으로 지정합니다. `.env.example`에는 키 값이 없고, 프론트엔드에는 Supabase URL과 publishable/anon key만 둡니다. 최근 시나리오의 제목·요약·시작 대사·fingerprint는 `localStorage`의 `loveDefense.recentScenarios`에 보관하고, OpenAI 생성 성공 시 `scenario_history`에도 저장합니다. `supabase/schema.sql`을 먼저 적용해야 합니다.
+
 테스트용 프로필은 닉네임에 `test-`를 포함합니다. SQL Editor에서 현재 익명 `auth.users.id`에 연결된 `profiles`, `leaderboard_entries` 등을 확인 후 삭제하세요. 운영 데이터로 테스트하지 마세요.
