@@ -1,6 +1,6 @@
 # Love Defense
 
-상대의 진짜 의도를 맞히며 서로의 연애 커뮤니케이션 스타일을 이해하는 채팅 디펜스 게임
+상대의 진짜 의도를 맞히며 서로의 연애 커뮤니케이션 스타일을 이해하는 채팅 디펜스 게임입니다. React와 Vite 기반의 단일 페이지 앱으로 랜딩, 홈, 상황 선택, 채팅 플레이, 결과, 리그, 프로필 흐름을 제공합니다.
 
 ## 기술 스택
 
@@ -84,6 +84,8 @@ Supabase의 `URL`과 `anon key`는 Vite 환경변수인 `VITE_` 접두사를 사
 
 서비스 롤 키나 기타 비밀 키는 프론트엔드 환경변수에 저장하지 않습니다.
 
+Supabase 환경변수가 없어도 목업 데이터와 localStorage로 게임을 실행할 수 있습니다. Supabase 연결은 `src/lib/supabase.js`의 클라이언트 경계에 두어 이후 사용자 인증과 결과 동기화를 확장할 수 있게 했습니다.
+
 ## 배포
 
 Vercel에서 Git 저장소를 연결하면 기본 설정으로 배포할 수 있습니다.
@@ -116,7 +118,10 @@ npm run build
 .
 ├─ src/
 │  ├─ lib/
-│  │  └─ supabase.js    # Supabase 클라이언트
+│  │  ├─ supabase.js    # Supabase 클라이언트
+│  │  └─ storage.js     # localStorage 기반 사용자/플레이 기록
+│  ├─ data/
+│  │  └─ scenarios.js   # 목업 대화 상황과 선택지
 │  ├─ App.jsx           # 애플리케이션 루트 컴포넌트
 │  ├─ index.css         # 전역 스타일
 │  └─ main.jsx          # 애플리케이션 진입점
