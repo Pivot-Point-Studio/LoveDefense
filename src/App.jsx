@@ -20,7 +20,7 @@ import logo from "./assets/brand/love-defense.svg"
 import { buildStageScenario } from "./game/relationshipScenarioService.js"
 import { getLocalProfileId, loadDiversityState, recordGameCombination, recordPartnerDialogue, recordSuggestedResponse, saveDiversityState } from "./game/dialogueDiversity.js"
 import { canAcknowledgeStage, canSubmitTurn, createScenarioSnapshot, createStageTransition, openStageIntro, RESOLUTION_STATE, resolveConversationState, scenarioSummaryText, SCENARIO_ENDED_MESSAGE, SCENARIO_STARTED_MESSAGE, STAGE_STATUS } from "./game/stageFlow.js"
-import { isAnonymousUser, linkOAuthAccount, onAuthStateChanged, signOutCurrentUser } from "./backend/auth/authService.js"
+import { isAnonymousUser, onAuthStateChanged, signInWithGoogleAccount, signOutCurrentUser } from "./backend/auth/authService.js"
 import { getPartnerProfile, upsertPartnerProfile } from "./backend/repositories/partnerProfileRepository.js"
 import { canStartSlide, isSlideComplete, slideProgress } from "./game/profileOnboarding.js"
 
@@ -42,6 +42,7 @@ export default function App() {
   const [profileOnboardingError, setProfileOnboardingError] = useState("")
   const turnRequestInFlight = useRef(false)
   const scenarioRequestInFlight = useRef(false)
+  useEffect(() => { const params = new URLSearchParams(window.location.search); const oauthError = params.get("error_code"); if (oauthError) { setStatus(oauthError === "identity_already_exists" ? "이 Google 계정은 이미 등록되어 있어요. '기존 Google 계정으로 로그인'을 이용해주세요." : (params.get("error_description") ?? "Google 인증을 완료하지 못했어요.")); window.history.replaceState({}, "", window.location.pathname) } else if (window.location.hash === "#") window.history.replaceState({}, "", window.location.pathname) }, [])
   useEffect(() => { document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#050509" : "#ffffff"); localStorage.setItem(THEME_STORAGE_KEY, theme) }, [theme])
   useEffect(() => { (async () => { const splashStartedAt = performance.now(); const boot = await bootstrapApp("love-defense"); setAuthUser(boot.user); if (boot.error) setConfigNote(friendlyError(boot.error)); else if (supabase) { const p = await getProfile(); if (p.data) setUser((value) => ({ ...value, nickname: p.data.nickname ?? value.nickname, mbti: p.data.mbti ?? value.mbti, gender: p.data.gender ?? value.gender, tendency: p.data.tendency ?? value.tendency })); const remotePartner = await getPartnerProfile(); if (remotePartner.data) setPartner((value) => partnerFromServer(remotePartner.data, value)); const remoteDiversity = p.data?.dialogue_diversity ?? (await getDialogueDiversityState()).data; if (remoteDiversity && Object.keys(remoteDiversity).length) setDiversityState(saveDiversityState(remoteDiversity, getLocalProfileId())); const expressions = await getSavedExpressions(); if (!expressions.error) setSavedExpressions(expressions.data.map((item) => ({ id: item.id, text: item.expression_text, createdAt: item.created_at, source: item.scenario_title }))) } const remainingSplashTime = 1500 - (performance.now() - splashStartedAt); if (remainingSplashTime > 0) await new Promise((resolve) => setTimeout(resolve, remainingSplashTime)); setReady(true) })() }, [])
   useEffect(() => { const subscription = onAuthStateChanged((nextUser) => setAuthUser(nextUser)); return () => subscription?.data?.subscription?.unsubscribe?.() }, [])
@@ -190,7 +191,7 @@ export default function App() {
     catch (error) { setProfileOnboardingError(friendlyError(error) || "Supabase에 저장하지 못했습니다. 다시 시도해 주세요."); return false }
     finally { setProfileOnboardingSaving(false) }
   }
-  async function connectGoogle() { setStatus("Google 계정 연결을 준비하고 있어요…"); const linked = await linkOAuthAccount(); if (linked.error) { console.error("[Auth] Google 계정 연결 실패", linked.error); setStatus(linked.error.message ?? "Google 로그인 연결에 실패했습니다.") } }
+  async function connectGoogle() { setStatus("Google 로그인을 준비하고 있어요…"); const signedIn = await signInWithGoogleAccount(); if (signedIn.error) { console.error("[Auth] Google 로그인 실패", signedIn.error); setStatus(signedIn.error.message ?? "Google 로그인에 실패했습니다.") } }
   async function signOutGoogle() { const signedOut = await signOutCurrentUser(); if (signedOut.error) { setStatus(signedOut.error.message ?? "로그아웃하지 못했습니다."); return } window.location.reload() }
   if (!ready) return <main className="splash-screen" aria-label="연애 디펜스 로딩 중"><div className="splash-logo-wrap"><img className="splash-logo" src={logo} alt="연애 디펜스" /></div><div className="splash-caption">AI-POWERED</div></main>
   if (page === "landing") return <Landing onStart={openProfileOnboarding} />
