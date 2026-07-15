@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { adjustScore, calculateStageDeltas, getStageClearResult, getStageDifficulty, normalizeConversationDifficulty, resolveStageInitialState, STAGE_COUNT } from "./stageDifficulty.js"
+import { adjustScore, calculateStageDeltas, getNextStageNumber, getStageClearResult, getStageDifficulty, normalizeConversationDifficulty, resolveStageInitialState, STAGE_COUNT } from "./stageDifficulty.js"
 import { stageDefinitions } from "./stageModel.js"
 
 test("게임은 정확히 다섯 Stage이고 턴 수는 6~10이다", () => {
@@ -8,6 +8,8 @@ test("게임은 정확히 다섯 Stage이고 턴 수는 6~10이다", () => {
   assert.equal(stageDefinitions.length, 5)
   assert.deepEqual(stageDefinitions.map((stage) => getStageDifficulty(stage.stageNumber).turnCount), [6, 7, 8, 9, 10])
   assert.ok(stageDefinitions.every((stage) => stage.turns.length >= getStageDifficulty(stage.stageNumber).turnCount))
+  assert.equal(getNextStageNumber(5), null)
+  assert.equal(getNextStageNumber(4), 5)
 })
 
 test("Stage 종료 결과를 실패 원인별로 구분한다", () => {
@@ -21,6 +23,7 @@ test("Stage 종료 결과를 실패 원인별로 구분한다", () => {
 
 test("민감도 보정은 높은 Stage에서 중간 점수를 더 낮추고 100은 유지한다", () => {
   assert.ok(adjustScore(70, 5) < adjustScore(70, 1))
+  assert.equal(adjustScore(70, 5), Math.round(100 * Math.pow(.7, 1.35)))
   for (let stage = 1; stage <= 5; stage += 1) assert.equal(adjustScore(100, stage), 100)
 })
 
@@ -61,4 +64,14 @@ test("Stage 초기 HP와 갈등은 권장 범위 안에서 기존 값을 유지�
   const clamped = resolveStageInitialState({ initialState: { relationshipHp: 95, conflictLevel: 10 } }, 5)
   assert.equal(clamped.relationshipHp, 55)
   assert.equal(clamped.conflictLevel, 65)
+  const stringValues = resolveStageInitialState({ initialState: { relationshipHp: "60", conflictLevel: "50" } }, 3)
+  assert.equal(stringValues.relationshipHp, 60)
+  assert.equal(stringValues.conflictLevel, 50)
+})
+
+test("구형 또는 잘못된 Stage 번호가 Stage 6을 만들지 않는다", () => {
+  const normalized = normalizeConversationDifficulty({ currentStageNumber: 6, currentTurn: 99, messages: [] })
+  assert.equal(normalized.currentStageNumber, 5)
+  assert.equal(normalized.currentStageTurnCount, 10)
+  assert.equal(getNextStageNumber(normalized.currentStageNumber), null)
 })

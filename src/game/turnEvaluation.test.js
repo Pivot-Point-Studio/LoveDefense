@@ -27,10 +27,12 @@ test("상대방 fallback은 내부 지침을 출력하지 않는다", () => {
 })
 
 test("OpenAI 런타임 평가 및 대사 검증", () => {
-  const result = { dimensionScores: { emotionRecognition: 70, needSatisfaction: 70, communicationFit: 70, attachmentSafety: 70, conflictAppropriateness: 70, relationshipRepair: 70 }, rawScore: 70, reactionDirection: "partial", strengths: [], weaknesses: [], riskExpressions: [], detectedEmotionRecognition: [], detectedNeedResponse: [], suggestedBetterResponse: "네 마음을 더 듣고 싶어.", stabilityDelta: 2, trustDelta: 2, evaluationConfidence: .8 }
+  const result = { dimensionScores: { emotionRecognition: 70, needSatisfaction: 70, communicationFit: 70, attachmentSafety: 70, conflictAppropriateness: 70, relationshipRepair: 70 }, rawScore: 70, detectedIntent: "감정 확인", reactionDirection: "partial", strengths: [], weaknesses: [], riskExpressions: [], detectedEmotionRecognition: [], detectedNeedResponse: [], suggestedBetterResponse: "네 마음을 더 듣고 싶어.", stabilityDelta: 2, trustDelta: 2, evaluationConfidence: .8 }
   assert.equal(validateOpenAIEvaluation(result), result)
   assert.equal(validatePartnerDialogue({ partnerDialogue: "조금 더 이야기해줘서 고마워." }), "조금 더 이야기해줘서 고마워.")
   assert.throws(() => validatePartnerDialogue({ partnerDialogue: "방어적으로 반응하고 거리를 둔다." }))
+  assert.throws(() => validateOpenAIEvaluation({ ...result, riskExpressions: [{ type: "위험", target: "unknown", severity: 1, evidence: "문맥" }] }))
+  assert.throws(() => validatePartnerDialogue({ partnerDialogue: "첫 문장. 둘째 문장. 셋째 문장." }))
 })
 
 test("OpenAI 요청은 한 번 재시도하고 두 번 실패하면 오류 횟수를 남긴다", async () => {

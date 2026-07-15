@@ -17,6 +17,11 @@ export function getStageDifficulty(stageNumber) {
   return STAGE_DIFFICULTY[safe]
 }
 
+export function getNextStageNumber(stageNumber) {
+  const safe = Math.trunc(Number(stageNumber))
+  return Number.isFinite(safe) && safe >= 1 && safe < STAGE_COUNT ? safe + 1 : null
+}
+
 export function getStageSensitivity(stageNumber) {
   const safe = clamp(Math.trunc(stageNumber), 1, STAGE_COUNT)
   return {
@@ -58,13 +63,13 @@ export function calculateStageDeltas(adjustedScore, stageNumber) {
 
 export function resolveStageInitialState(stage, stageNumber) {
   const config = getStageDifficulty(stageNumber)
-  const hp = stage?.initialState?.relationshipHp
-  const conflict = stage?.initialState?.conflictLevel
+  const hp = Number(stage?.initialState?.relationshipHp)
+  const conflict = Number(stage?.initialState?.conflictLevel)
   return {
     relationshipHp: clamp(Number.isFinite(hp) ? hp : (config.initialHpRange.min + config.initialHpRange.max) / 2, config.initialHpRange.min, config.initialHpRange.max),
     conflictLevel: clamp(Number.isFinite(conflict) ? conflict : (config.initialConflictRange.min + config.initialConflictRange.max) / 2, config.initialConflictRange.min, config.initialConflictRange.max),
-    stability: clamp(stage?.initialState?.stability ?? 50),
-    trust: clamp(stage?.initialState?.trust ?? 50),
+    stability: clamp(Number(stage?.initialState?.stability ?? 50)),
+    trust: clamp(Number(stage?.initialState?.trust ?? 50)),
   }
 }
 
@@ -87,7 +92,7 @@ export function normalizeConversationDifficulty(conversation) {
   return {
     ...conversation,
     currentStageNumber: stageNumber,
-    currentTurn: clamp(conversation.currentTurn ?? 1, 1, config.turnCount),
+    currentTurn: clamp(Math.trunc(Number(conversation.currentTurn ?? 1)), 1, config.turnCount),
     currentStageTurnCount: config.turnCount,
     currentStageDifficulty: config,
     stageIntroAcknowledged: acknowledged,
