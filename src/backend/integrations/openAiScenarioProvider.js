@@ -1,5 +1,5 @@
-import { ScenarioProvider } from "./scenarioProvider";
-import { supabase } from "./supabaseClient";
+import { ScenarioProvider } from "../../services/scenarioProvider";
+import { supabase } from "../client/supabaseClient";
 
 const TIMEOUT_MS = 15000;
 export class OpenAiScenarioProvider extends ScenarioProvider {

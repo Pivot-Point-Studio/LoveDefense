@@ -1,4 +1,4 @@
-import { supabase, result } from "./supabaseClient"
+import { supabase, result } from "../client/supabaseClient"
 
 let currentUser = null
 

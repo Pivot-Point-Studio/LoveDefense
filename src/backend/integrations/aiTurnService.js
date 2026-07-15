@@ -1,6 +1,6 @@
-import { supabase } from "./supabaseClient.js"
-import { validateOpenAIEvaluation, validatePartnerDialogue } from "../game/aiResultValidation.js"
-import { retryAIRequest } from "../game/aiRequestRetry.js"
+import { supabase } from "../client/supabaseClient.js"
+import { validateCombinedTurnResult, validateOpenAIEvaluation, validatePartnerDialogue } from "../../game/aiResultValidation.js"
+import { retryAIRequest } from "../../game/aiRequestRetry.js"
 
 const TIMEOUT_MS = 20000
 
@@ -26,4 +26,8 @@ export async function evaluateUserInputWithOpenAI(payload, requestId) {
 
 export async function generatePartnerDialogueWithOpenAI(payload, requestId) {
   return invokeWithRetry("generate_partner_dialogue", payload, requestId, (value) => ({ partnerDialogue: validatePartnerDialogue(value) }))
+}
+
+export async function evaluateAndGenerateTurnWithOpenAI(payload, requestId) {
+  return invokeWithRetry("evaluate_and_generate_turn", payload, requestId, validateCombinedTurnResult)
 }

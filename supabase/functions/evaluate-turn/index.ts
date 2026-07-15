@@ -24,6 +24,8 @@ const EVALUATION_SCHEMA = {
 } as const;
 
 const DIALOGUE_SCHEMA = { type: "object", additionalProperties: false, required: ["partnerDialogue"], properties: { partnerDialogue: { type: "string", minLength: 1, maxLength: 300 } } } as const;
+const ENDING_MODES = ["direct_question", "indirect_question", "plain_statement", "emotional_disclosure", "short_reply", "silence", "ellipsis", "boundary_setting", "action_promise", "concrete_request", "apology", "responsibility_acknowledgment", "topic_shift", "sarcasm", "irritated_close", "avoidant_withdrawal", "unresolved_close", "delayed_response_style", "relationship_confirmation", "behavioral_observation"] as const;
+const COMBINED_SCHEMA = { type: "object", additionalProperties: false, required: [...EVALUATION_SCHEMA.required, "partnerDialogue", "endingMode"], properties: { ...EVALUATION_SCHEMA.properties, partnerDialogue: { type: "string", minLength: 1, maxLength: 300 }, endingMode: { type: "string", enum: ENDING_MODES } } } as const;
 
 // A lost response may cause the client to retry the same request. Cache successful
 // results briefly so one logical turn does not create two different AI outcomes.
@@ -59,9 +61,16 @@ suggestedBetterResponse는 최근 추천과 다른 한국어 답변으로 최대
 
 function buildDialoguePrompt(input: Record<string, unknown>) {
   return `당신은 카카오톡 대화 속 실제 연인 역할이다. partnerDialogue에는 상대방이 지금 실제로 보낼 한국어 대사만 최대 두 문장으로 작성하라.
-성별 고정관념은 쓰지 말고 캐릭터 성격, 애착 유형, 의사소통 축, 최근 대화를 말투 결정에 우선 반영하라. Stage 민감도는 반응 강도에 반영하되 높은 Stage라고 무조건 화내지 말고, 매우 적절한 답변에는 Stage 5에서도 진심으로 긍정 반응하라.
-최근 상대 대사와 표현을 반복하지 마라. 행동 지문, 괄호 설명, 심리 해설, 점수, 평가, 코치 조언, '방어적으로 반응한다', '거리를 둔다', '감정이 상했다', '긴장이 풀린다' 같은 내부 방향 설명을 출력하지 마라.
+성별 고정관념은 쓰지 말고 캐릭터 성격, 애착 스타일, 현실 행동 패턴, 의사소통 축, 장소와 주변 압력을 반영하라. 높은 Stage라고 자동으로 화내지 말고 좋은 답변에는 긍정적인 반응도 허용하라.
+매번 질문으로 끝내지 마라. 질문이 자연스러운 상황에서만 질문형을 선택하고 진술, 감정 고백, 단답, 침묵, 말끝 흐림, 경계 설정, 행동 약속, 사과, 책임 인정, 화제 전환, 미해결 종결도 사용하라. 이번 응답은 허용된 endingMode 중 하나를 선택하고 최근 종결 방식과 문구를 피하라.
+같은 첫 구절, 핵심 동사, 감정 단어, 질문 구조, 종결어미, 문장 길이 패턴을 최근 대사와 반복하지 마라. 잠긴 문장은 그대로 사용하지 말고 의미가 필요하면 주어·어순·동사·감정·직접성·길이를 구조적으로 바꿔라.
+최근 상대 대사와 표현을 반복하지 마라. 행동 지문, 괄호 설명, 심리 해설, 점수, 평가, 코치 조언, 내부 유형명이나 '방어적으로 반응한다', '거리를 둔다', '감정이 상했다' 같은 내부 방향 설명을 출력하지 마라.
+장소의 사람, 거리, 시간, 귀가, 계산, 주변 시선 등 물리적 조건과 현재 사건의 서사 단계를 자연스럽게 반영하라.
 입력 JSON: ${JSON.stringify(input)}`;
+}
+
+function buildCombinedPrompt(input: Record<string, unknown>) {
+  return `${buildEvaluationPrompt(input)}\n\n${buildDialoguePrompt(input)}\n평가와 상대방 실제 대사를 이번 한 구조화 응답에 함께 작성하라. suggestedBetterResponse도 질문형만 고집하지 말고 사과, 행동 약속, 경계 존중, 안전 배려, 금전 기준 합의 등으로 다양화하라.`;
 }
 
 async function callOpenAI(prompt: string, schema: Record<string, unknown>, schemaName: string) {
@@ -81,14 +90,16 @@ serve(async (request) => {
   try {
     const input = await request.json();
     const requestType = input.requestType;
-    if (!["evaluate_user_input", "generate_partner_dialogue"].includes(requestType)) throw new Error("Unsupported requestType");
+    if (!["evaluate_user_input", "generate_partner_dialogue", "evaluate_and_generate_turn"].includes(requestType)) throw new Error("Unsupported requestType");
     if (typeof input.requestId !== "string" || !input.requestId.trim()) throw new Error("requestId is required");
     const cacheKey = `${requestType}:${input.requestId}`;
     const cached = cachedResponse(cacheKey);
     if (cached) return new Response(JSON.stringify({ ...cached, provider: "openai", requestId: input.requestId }), { headers: { ...cors, "Content-Type": "application/json" } });
     const response = requestType === "evaluate_user_input"
       ? await callOpenAI(buildEvaluationPrompt(input), EVALUATION_SCHEMA, "turn_evaluation")
-      : await callOpenAI(buildDialoguePrompt(input), DIALOGUE_SCHEMA, "partner_dialogue");
+      : requestType === "evaluate_and_generate_turn"
+        ? await callOpenAI(buildCombinedPrompt(input), COMBINED_SCHEMA, "turn_with_partner_dialogue")
+        : await callOpenAI(buildDialoguePrompt(input), DIALOGUE_SCHEMA, "partner_dialogue");
     storeResponse(cacheKey, response);
     return new Response(JSON.stringify({ ...response, provider: "openai", requestId: input.requestId }), { headers: { ...cors, "Content-Type": "application/json" } });
   } catch (error) {

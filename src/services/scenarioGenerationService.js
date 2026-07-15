@@ -1,6 +1,6 @@
 import { createScenarioProvider, generateWithFallback } from "./scenarioProviderFactory";
 import { isDuplicate, loadRecentStages, rememberStage } from "./scenarioDuplicateChecker";
-import { saveScenarioHistory } from "../repositories/scenarioHistoryRepository";
+import { saveScenarioHistory } from "../backend/repositories/scenarioHistoryRepository";
 
 const factory = createScenarioProvider();
 export async function generateStage(request, onStatus) {

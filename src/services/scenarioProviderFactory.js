@@ -1,6 +1,6 @@
-import { OpenAiScenarioProvider } from "./openAiScenarioProvider";
+import { OpenAiScenarioProvider } from "../backend/integrations/openAiScenarioProvider";
 import { TemplateScenarioProvider } from "./templateScenarioProvider";
-import { isSupabaseConfigured } from "../config/supabaseConfig";
+import { isSupabaseConfigured } from "../backend/config/supabaseConfig";
 
 export function createScenarioProvider() { return { primary: isSupabaseConfigured ? new OpenAiScenarioProvider() : null, fallback: new TemplateScenarioProvider() }; }
 export async function generateWithFallback(factory, request, onStatus = () => {}) {

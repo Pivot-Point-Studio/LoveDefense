@@ -1,4 +1,4 @@
-import { friendlyError } from "./supabaseClient"
+import { friendlyError } from "../client/supabaseClient"
 const QUEUE_KEY = "loveDefense.pendingSyncQueue"
 const read = () => { try { return JSON.parse(localStorage.getItem(QUEUE_KEY) ?? "[]") } catch { return [] } }
 export function enqueueSync(operationType, payload, error) { const queue = read(); const operationId = payload.operationId ?? crypto.randomUUID(); if (!queue.some((x) => x.operationId === operationId)) queue.push({ operationId, operationType, payload: { ...payload, operationId }, createdAt: new Date().toISOString(), retryCount: 0, lastError: friendlyError(error) }); localStorage.setItem(QUEUE_KEY, JSON.stringify(queue)); return operationId }
