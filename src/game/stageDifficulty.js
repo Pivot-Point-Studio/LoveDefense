@@ -1,3 +1,5 @@
+import { createScenarioSnapshot, RESOLUTION_STATE, STAGE_STATUS, STAGE_TRANSITION_DURATION_MS } from "./stageFlow.js"
+
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, Number.isFinite(Number(value)) ? Number(value) : 0))
 
 export const STAGE_COUNT = 5
@@ -89,6 +91,12 @@ export function normalizeConversationDifficulty(conversation) {
   const stageNumber = clamp(conversation.currentStageNumber ?? 1, 1, STAGE_COUNT)
   const config = getStageDifficulty(stageNumber)
   const acknowledged = conversation.stageIntroAcknowledged ?? Boolean(conversation.messages?.some((message) => message.stageNumber === stageNumber && message.sender === "partner"))
+  const stageStatus = conversation.stageStatus ?? (acknowledged ? STAGE_STATUS.PLAYING : STAGE_STATUS.INTRO)
+  const currentStage = conversation.stages?.[stageNumber - 1]
+  const pendingStageNumber = conversation.pendingStageNumber ?? (stageStatus === STAGE_STATUS.INTRO || stageStatus === STAGE_STATUS.TRANSITION ? stageNumber : null)
+  const transitionOverlay = stageStatus === STAGE_STATUS.TRANSITION
+    ? conversation.transitionOverlay ?? { stageNumber: pendingStageNumber, readyAt: Date.now() + STAGE_TRANSITION_DURATION_MS }
+    : null
   return {
     ...conversation,
     currentStageNumber: stageNumber,
@@ -96,7 +104,14 @@ export function normalizeConversationDifficulty(conversation) {
     currentStageTurnCount: config.turnCount,
     currentStageDifficulty: config,
     stageIntroAcknowledged: acknowledged,
-    stageIntro: { stageNumber, isOpen: !acknowledged, acknowledged },
+    stageStatus,
+    pendingStageNumber,
+    stageIntro: { stageNumber: pendingStageNumber ?? stageNumber, isOpen: stageStatus === STAGE_STATUS.INTRO, acknowledged },
+    transitionOverlay,
+    currentStageId: conversation.currentStageId ?? currentStage?.id ?? null,
+    currentScenario: conversation.currentScenario ?? (acknowledged ? createScenarioSnapshot(currentStage) : null),
+    resolutionState: conversation.resolutionState ?? RESOLUTION_STATE.UNRESOLVED,
+    isGeneratingScenario: false,
     stageResults: conversation.stageResults ?? [],
   }
 }

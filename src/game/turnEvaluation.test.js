@@ -4,6 +4,7 @@ import { buildRuleBasedHints, createRuleFallbackEvaluation, fallbackReaction } f
 import { stageDefinitions } from "./stageModel.js"
 import { validateOpenAIEvaluation, validatePartnerDialogue } from "./aiResultValidation.js"
 import { retryAIRequest } from "./aiRequestRetry.js"
+import { buildDialoguePayload } from "./stagePromptContext.js"
 
 test("규칙 분석은 OpenAI 참고 힌트를 구조화한다", () => {
   const hints = buildRuleBasedHints("서운했구나. 네 마음을 더 말해줄래?")
@@ -41,4 +42,17 @@ test("OpenAI 요청은 한 번 재시도하고 두 번 실패하면 오류 횟�
   assert.equal(success.attempts, 2)
   assert.equal(calls, 2)
   await assert.rejects(() => retryAIRequest(async () => { throw new Error("invalid json") }, () => { throw new Error("invalid") }), (error) => error.attempts === 2)
+})
+
+test("상대방 반응 요청은 현재 STAGE의 고정 시나리오 정보를 매번 전달한다", () => {
+  const stage = stageDefinitions[0]
+  const currentScenario = { id: stage.id, title: stage.title, contextSummary: stage.contextSummary, location: "카페", timeContext: "늦은 밤", conflictCause: "정서적 지지 부족", hiddenEmotion: "불안", hiddenNeed: "공감", userRole: "연인", partnerRole: "연인", goal: "감정 확인" }
+  const payload = buildDialoguePayload("네 마음을 이해해.", { reactionDirection: "positive" }, { stage, turn: stage.turns[0], stageDifficulty: { turnCount: 6 }, currentScenario, resolutionState: "resolved", gameState: { relationshipHp: 80, conflictLevel: 20 }, character: {}, recentMessages: [], diversityState: {}, previousAdvice: [] })
+  assert.equal(payload.scenarioId, currentScenario.id)
+  assert.equal(payload.location, "카페")
+  assert.equal(payload.timeContext, "늦은 밤")
+  assert.equal(payload.conflictCause, "정서적 지지 부족")
+  assert.equal(payload.resolutionState, "resolved")
+  assert.equal(payload.maxTurns, 6)
+  assert.deepEqual(payload.conversationHistory, [])
 })

@@ -75,3 +75,15 @@ test("구형 또는 잘못된 Stage 번호가 Stage 6을 만들지 않는다", (
   assert.equal(normalized.currentStageTurnCount, 10)
   assert.equal(getNextStageNumber(normalized.currentStageNumber), null)
 })
+
+test("새로고침 복원은 현재 scenarioId와 배경 및 진행 상태를 그대로 유지한다", () => {
+  const scenario = { id: "scenario-stage-2", title: "연락 문제", contextSummary: "같은 장소에서 연락 문제를 이야기 중", location: "카페", timeContext: "늦은 밤", conflictCause: "정서적 지지 부족" }
+  const restored = normalizeConversationDifficulty({ currentStageNumber: 2, currentTurn: 3, currentStageId: scenario.id, currentScenario: scenario, stageStatus: "playing", stageIntroAcknowledged: true, relationshipHp: 72, conflictLevel: 24, messages: [], stages: [] })
+  assert.equal(restored.currentStageNumber, 2)
+  assert.equal(restored.currentTurn, 3)
+  assert.equal(restored.currentStageId, scenario.id)
+  assert.deepEqual(restored.currentScenario, scenario)
+  assert.equal(restored.relationshipHp, 72)
+  assert.equal(restored.conflictLevel, 24)
+  assert.equal(restored.stageStatus, "playing")
+})

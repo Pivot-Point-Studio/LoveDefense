@@ -1,34 +1,8 @@
 import { evaluateAndGenerateTurnWithOpenAI, evaluateUserInputWithOpenAI, generatePartnerDialogueWithOpenAI } from "../backend/integrations/aiTurnService.js"
 import { adjustScore, getStageSensitivity } from "./stageDifficulty.js"
 import { buildRuleBasedHints, createRuleFallbackEvaluation, fallbackReaction, isSafetyBlocked } from "./turnEvaluator.js"
-import { classifyEndingMode, getLockedPhrases, validateDialogueDiversity } from "./dialogueDiversity.js"
-
-function buildPatternContext(context) {
-  const stagePattern = context.turn.patternContext ?? context.stage.patternContext ?? {}
-  const diversity = context.diversityState ?? {}
-  const messagePartnerResponses = (context.recentMessages ?? []).filter((message) => message.sender === "partner").map((message) => message.text).reverse()
-  const recentPartnerResponses = [...new Set([...(diversity.recentPartnerResponses ?? []), ...messagePartnerResponses])].slice(0, 10)
-  return {
-    casePatternId: stagePattern.casePatternId ?? context.stage.id,
-    attachmentStyle: stagePattern.attachmentStyle ?? context.stage.attachmentType?.type ?? "secure",
-    behaviorTypeId: stagePattern.behaviorTypeId ?? context.character?.characterProfile?.characterId ?? "unknown",
-    location: stagePattern.location ?? { id: "unknown", displayName: "현재 장소", currentDetails: [] },
-    trigger: stagePattern.trigger ?? { id: "unknown", summary: context.stage.contextSummary, currentEscalation: context.turn.situationContext },
-    narrativeArcPhase: stagePattern.narrativeArcPhase ?? "development",
-    allowedEndingModes: stagePattern.allowedEndingModes ?? [],
-    discouragedEndingModes: stagePattern.discouragedEndingModes ?? [],
-    recentEndings: (diversity.recentEndingHistory ?? []).slice(0, 10).map((item) => ({ endingMode: item.endingMode, finalClause: item.finalClause })),
-    lockedPhrases: getLockedPhrases(diversity),
-    recentPartnerResponses,
-    speechPatternHints: stagePattern.speechPatternHints ?? [],
-    behaviorPatternHints: stagePattern.behaviorPatternHints ?? []
-  }
-}
-
-function dialoguePayload(input, evaluation, context) {
-  const patternContext = buildPatternContext(context)
-  return { stageNumber: context.stage.stageNumber, turnNumber: context.turn.turnNumber, stageSensitivity: getStageSensitivity(context.stage.stageNumber), gameState: context.gameState, character: context.character, attachmentType: context.stage.attachmentType, communicationAxes: context.stage.communicationAxes, hiddenEmotion: context.stage.hiddenEmotion, hiddenNeed: context.stage.hiddenNeed, userInput: input, evaluation, reactionDirection: evaluation.reactionDirection, recentMessages: context.recentMessages.slice(-16), recentPartnerDialogues: patternContext.recentPartnerResponses, recentSuggestedResponses: (context.diversityState?.recentSuggestedResponses ?? context.previousAdvice ?? []).slice(-10), previousStageSummary: context.previousStageSummary ?? "", patternContext, recentDialogueEndings: patternContext.recentEndings }
-}
+import { classifyEndingMode, validateDialogueDiversity } from "./dialogueDiversity.js"
+import { buildDialoguePayload, buildPatternContext } from "./stagePromptContext.js"
 
 export async function evaluateTurn(input, context) {
   const hints = buildRuleBasedHints(input)
@@ -36,7 +10,7 @@ export async function evaluateTurn(input, context) {
   const requestId = `${context.conversationId}:${context.stage.stageNumber}:${context.turn.turnNumber}:turn`
   let evaluation
   try {
-    const response = await evaluateAndGenerateTurnWithOpenAI({ ...dialoguePayload(input, { reactionDirection: "partial" }, context), requestType: "evaluate_and_generate_turn", ruleBasedHints: hints, stage: context.stage, turn: context.turn, previousAdvice: context.previousAdvice.slice(-10), stageSensitivity: getStageSensitivity(context.stage.stageNumber) }, requestId)
+    const response = await evaluateAndGenerateTurnWithOpenAI({ ...buildDialoguePayload(input, { reactionDirection: "partial" }, context), requestType: "evaluate_and_generate_turn", ruleBasedHints: hints, stage: context.stage, turn: context.turn, previousAdvice: context.previousAdvice.slice(-10), stageSensitivity: getStageSensitivity(context.stage.stageNumber) }, requestId)
     const patternContext = buildPatternContext(context)
     const generatedCheck = validateDialogueDiversity(response.result.partnerDialogue, { recentPartnerResponses: patternContext.recentPartnerResponses, recentEndings: patternContext.recentEndings, endingMode: response.result.endingMode, lockedPhrases: patternContext.lockedPhrases })
     evaluation = { ...response.result, partnerDialogue: generatedCheck.valid ? response.result.partnerDialogue : "", dialogueEndingMode: generatedCheck.valid ? response.result.endingMode : null, dialogueRegenerationReason: generatedCheck.valid ? null : generatedCheck.reason, metadata: { source: "openai_combined", openaiAttemptCount: response.attempts, model: response.model }, analysisSource: "openai_combined" }
@@ -55,7 +29,7 @@ export async function evaluateTurn(input, context) {
 
 export async function generatePartnerReaction(input, evaluation, context) {
   const patternContext = buildPatternContext(context)
-  const payload = dialoguePayload(input, evaluation, context)
+  const payload = buildDialoguePayload(input, evaluation, context)
   const requestId = `${context.conversationId}:${context.stage.stageNumber}:${context.turn.turnNumber}:dialogue`
   const generate = async (suffix = "") => generatePartnerDialogueWithOpenAI({ ...payload, regenerationReason: suffix }, `${requestId}${suffix ? ":regen" : ""}`)
   try {
