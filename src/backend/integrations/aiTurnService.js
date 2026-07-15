@@ -1,6 +1,6 @@
-import { supabase } from "./supabaseClient.js"
-import { validateCombinedTurnResult, validateOpenAIEvaluation, validatePartnerDialogue } from "../game/aiResultValidation.js"
-import { retryAIRequest } from "../game/aiRequestRetry.js"
+import { supabase } from "../client/supabaseClient.js"
+import { validateCombinedTurnResult, validateOpenAIEvaluation, validatePartnerDialogue } from "../../game/aiResultValidation.js"
+import { retryAIRequest } from "../../game/aiRequestRetry.js"
 
 const TIMEOUT_MS = 20000
 

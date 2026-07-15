@@ -1,4 +1,4 @@
-import { evaluateAndGenerateTurnWithOpenAI, evaluateUserInputWithOpenAI, generatePartnerDialogueWithOpenAI } from "../services/aiTurnService.js"
+import { evaluateAndGenerateTurnWithOpenAI, evaluateUserInputWithOpenAI, generatePartnerDialogueWithOpenAI } from "../backend/integrations/aiTurnService.js"
 import { adjustScore, getStageSensitivity } from "./stageDifficulty.js"
 import { buildRuleBasedHints, createRuleFallbackEvaluation, fallbackReaction, isSafetyBlocked } from "./turnEvaluator.js"
 import { classifyEndingMode, getLockedPhrases, validateDialogueDiversity } from "./dialogueDiversity.js"

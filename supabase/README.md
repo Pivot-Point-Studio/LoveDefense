@@ -1,7 +1,7 @@
 # Supabase 설정
 
 1. Supabase 프로젝트를 만들고 Authentication > Providers에서 Anonymous Sign-Ins를 켭니다.
-2. SQL Editor에서 `schema.sql`, `policies.sql`, `functions.sql` 순서로 실행합니다. `seed.sql`은 선택 사항입니다.
+2. SQL Editor에서 `database/schema.sql`, `database/policies.sql`, `database/functions.sql` 순서로 실행합니다. `database/seed.sql`은 선택 사항입니다.
 3. Project URL과 Publishable/anon key를 확인해 프로젝트 루트 `.env`에 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`로 입력합니다.
 4. `npm run dev`로 실행하고 브라우저 콘솔에서 인증/저장 오류를 확인합니다.
 

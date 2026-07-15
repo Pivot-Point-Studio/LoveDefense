@@ -1,4 +1,4 @@
-import { supabase, result } from "../services/supabaseClient"; import { getCurrentUserId } from "../services/authService"
+import { supabase, result } from "../client/supabaseClient"; import { getCurrentUserId } from "../auth/authService"
 export async function createGameSession(session) { const r = await supabase.from("game_sessions").upsert({ ...session, user_id: getCurrentUserId() }, { onConflict: "user_id,client_session_id" }).select().single(); return result(r.data, r.error) }
 export async function updateGameSession(id, changes) { const r = await supabase.from("game_sessions").update(changes).eq("id", id).eq("user_id", getCurrentUserId()).select().single(); return result(r.data, r.error) }
 export async function saveStageResult(stage) { const r = await supabase.from("stage_results").upsert({ ...stage, user_id: getCurrentUserId() }, { onConflict: "session_id,stage_number" }).select().single(); return result(r.data, r.error) }

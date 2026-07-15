@@ -1,5 +1,5 @@
-import { getCurrentUserId } from "./authService"
-import { supabase } from "./supabaseClient"
+import { getCurrentUserId } from "../auth/authService"
+import { supabase } from "../client/supabaseClient"
 import { saveProfile } from "../repositories/profileRepository"
 import { saveExpression } from "../repositories/expressionRepository"
 import { createGameSession, finalizeGameSession } from "../repositories/gameRepository"
