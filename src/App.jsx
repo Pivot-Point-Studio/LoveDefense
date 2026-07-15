@@ -22,7 +22,6 @@ import { getLocalProfileId, loadDiversityState, recordGameCombination, recordPar
 import { canAcknowledgeStage, canSubmitTurn, createScenarioSnapshot, createStageTransition, openStageIntro, RESOLUTION_STATE, resolveConversationState, scenarioSummaryText, SCENARIO_ENDED_MESSAGE, SCENARIO_STARTED_MESSAGE, STAGE_STATUS } from "./game/stageFlow.js"
 import { isAnonymousUser, onAuthStateChanged, signInWithGoogleAccount, signOutCurrentUser } from "./backend/auth/authService.js"
 import { getPartnerProfile, upsertPartnerProfile } from "./backend/repositories/partnerProfileRepository.js"
-import { canStartSlide, isSlideComplete, slideProgress } from "./game/profileOnboarding.js"
 
 const tabs = [["home", "홈", "⌂"], ["practice", "연습", "✦"], ["league", "리그", "♛"], ["profile", "사용자", "◉"]]
 const genderLabel = (gender) => gender === "male" ? "남성" : gender === "female" ? "여성" : "성별 미설정"
@@ -242,10 +241,7 @@ function ProfileEditorFields({ user, partner }) {
   return <><div className="profile-form-column"><h3>내 성향</h3><label>닉네임<input name="nickname" defaultValue={user.nickname} minLength="2" maxLength="20" required /></label><label>성별<select name="gender" defaultValue={user.gender}><option value="male">♂ 남성</option><option value="female">♀ 여성</option></select></label><label>MBTI<select name="mbti" defaultValue={user.mbti}>{mbtiTypes.map((type) => <option key={type}>{type}</option>)}</select></label><label>성향 자유 입력<textarea name="tendency" defaultValue={user.tendency} maxLength="200" rows="3" /></label><p className="mbti-note">{mbtiDescriptions[user.mbti]} MBTI는 참고 정보일 뿐 절대적인 성격 판정은 아니에요.</p></div><div className="profile-form-column"><h3>상대방 성향</h3><label>닉네임<input name="partnerNickname" defaultValue={partner.nickname} minLength="2" maxLength="20" required /></label><label>성별<select name="partnerGender" defaultValue={partner.gender}><option value="male">♂ 남성</option><option value="female">♀ 여성</option></select></label><label>MBTI<select name="partnerMbti" defaultValue={partner.mbti}>{mbtiTypes.map((type) => <option key={type}>{type}</option>)}</select></label><label>성향 자유 입력<textarea name="partnerTendency" defaultValue={partner.tendency} maxLength="200" rows="3" /></label></div></>
 }
 function SlideToSave({ onComplete, saving }) {
-  const trackRef = useRef(null); const draggingRef = useRef(false); const [progress, setProgress] = useState(0)
-  const progressAt = (clientX) => slideProgress(clientX, trackRef.current?.getBoundingClientRect())
-  const finish = async (event) => { if (!draggingRef.current) return; draggingRef.current = false; const finalProgress = progressAt(event.clientX); if (!isSlideComplete(finalProgress)) { setProgress(0); return } setProgress(1); const saved = await onComplete(); if (!saved) setProgress(0) }
-  return <div className={`slide-save ${saving ? "is-saving" : ""}`} ref={trackRef} role="group" aria-label="프로필 저장 슬라이더" onPointerDown={(event) => { if (saving || !canStartSlide(progressAt(event.clientX))) return; draggingRef.current = true; event.currentTarget.setPointerCapture(event.pointerId); setProgress(progressAt(event.clientX)) }} onPointerMove={(event) => { if (draggingRef.current && !saving) setProgress(progressAt(event.clientX)) }} onPointerUp={finish} onPointerCancel={() => { draggingRef.current = false; setProgress(0) }}><span className="slide-save-fill" style={{ width: `${progress * 100}%` }} /><span className="slide-save-label">{saving ? "Supabase에 저장 중…" : "오른쪽으로 밀어서 저장"}</span><span className="slide-save-handle" style={{ left: `calc(${progress * 100}% - ${progress * 52}px)` }} aria-hidden="true">→</span></div>
+  return <button className={`slide-save ${saving ? "is-saving" : ""}`} type="button" aria-label="프로필 저장" onClick={onComplete} disabled={saving}>{saving ? "저장 중…" : "저장"}</button>
 }
 function ProfileOnboardingModal({ user, partner, saving, error, onSave }) {
   const formRef = useRef(null); const dialogRef = useRef(null)
