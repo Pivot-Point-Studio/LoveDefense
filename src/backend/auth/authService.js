@@ -19,6 +19,13 @@ export const isAnonymousUser = (user = currentUser) => Boolean(user?.is_anonymou
 export const ensureAuthenticatedUser = initializeAuth
 export const onAuthStateChanged = (callback) => supabase?.auth.onAuthStateChange((_event, session) => { currentUser = session?.user ?? null; callback(currentUser) })
 export async function signOutCurrentUser() { if (!supabase) return result(null); const { error } = await supabase.auth.signOut(); currentUser = null; return result(null, error) }
+export async function signInWithGoogleAccount() {
+  if (!supabase) return result(null, { code: "CONFIG_MISSING", message: "Supabase 설정이 없습니다." })
+  const redirectTo = `${window.location.origin}${window.location.pathname}`
+  const { data, error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } })
+  if (error) return result(null, { code: error.code ?? "GOOGLE_SIGN_IN_FAILED", message: error.message ?? "Google 로그인에 실패했습니다." })
+  return result(data)
+}
 export async function upgradeAnonymousAccount() {
   if (!supabase) return result(null, { code: "CONFIG_MISSING", message: "Supabase 설정이 없습니다." })
   if (!currentUser) {
