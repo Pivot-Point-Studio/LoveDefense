@@ -1188,6 +1188,7 @@ export default function App() {
     return (
       <Chat
         conversation={activeConversation}
+        user={user}
         partner={partner}
         onChoose={chooseAnswer}
         onFeedback={addFeedbackMessage}
@@ -1494,6 +1495,7 @@ function Practice({ selected, onToggle, onStart }) {
 }
 function Chat({
   conversation,
+  user,
   partner,
   onChoose,
   onFeedback,
@@ -1505,6 +1507,7 @@ function Chat({
 }) {
   const [input, setInput] = useState("");
   const [locked, setLocked] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState(null);
   const [error, setError] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [advice, setAdvice] = useState([]);
@@ -1549,18 +1552,34 @@ function Chat({
   async function submit(event) {
     event.preventDefault();
     if (locked || introOpen) return;
+    const valid = validateUserInput(input);
+    if (!valid.valid) {
+      setError(valid.message);
+      return;
+    }
+    const submittedText = valid.value;
+    setPendingMessage({
+      id: `pending-${Date.now()}`,
+      sender: "user",
+      senderName: user.nickname,
+      text: submittedText,
+      metadata: { gender: user.gender },
+    });
+    setInput("");
     setLocked(true);
     setError("");
     try {
-      const result = await onChoose(input);
+      const result = await onChoose(submittedText);
       if (result?.invalid || result?.blocked || result?.ignored) {
         setError(result.message ?? "현재 답변을 처리할 수 없어요.");
+        setInput(submittedText);
         return;
       }
-      setInput("");
     } catch {
+      setInput(submittedText);
       setError("메시지를 보내지 못했어요. 잠시 후 다시 시도해 주세요.");
     } finally {
+      setPendingMessage(null);
       setLocked(false);
     }
   }
@@ -1705,6 +1724,9 @@ function Chat({
               onSave={onSaveSuggested}
             />
           ))}
+          {pendingMessage && (
+            <MessageBubble message={pendingMessage} onSave={onSaveSuggested} />
+          )}
           {locked && <TypingIndicator partner={partner} />}
           {feedbackNotice && (
             <div className="chat-notice">{feedbackNotice}</div>
