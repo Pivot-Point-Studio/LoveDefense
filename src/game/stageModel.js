@@ -20,6 +20,12 @@ export const defaultStages = [{
   turns: baseTurns, branching: { positiveNextStageId: null, partialNextStageId: null, negativeNextStageId: null },
 }]
 
+export const stageDefinitions = Array.from({ length: 5 }, (_, index) => {
+  const stageNumber = index + 1
+  const source = defaultStages[0]
+  return { ...source, id: `${source.id}-${stageNumber}`, stageNumber, title: stageNumber === 1 ? source.title : `${source.title} · 다음 대화`, contextSummary: stageNumber === 1 ? source.contextSummary : "앞선 대화 이후에도 관계를 이어가며 서로의 마음을 확인하는 상황", branching: { positiveNextStageId: stageNumber < 5 ? `${source.id}-${stageNumber + 1}` : null, partialNextStageId: stageNumber < 5 ? `${source.id}-${stageNumber + 1}` : null, negativeNextStageId: stageNumber < 5 ? `${source.id}-${stageNumber + 1}` : null } }
+})
+
 export function normalizeStage(stage, index = 0) {
   if (stage?.turns?.length === 5 && stage.evaluationWeights) return { ...stage, stageNumber: stage.stageNumber ?? index + 1 }
   const source = defaultStages[index % defaultStages.length]

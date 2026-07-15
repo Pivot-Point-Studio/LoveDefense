@@ -1,0 +1,3 @@
+export const mbtiTypes = ["ISTJ", "ISFJ", "INFJ", "INTJ", "ISTP", "ISFP", "INFP", "INTP", "ESTP", "ESFP", "ENFP", "ENTP", "ESTJ", "ESFJ", "ENFJ", "ENTJ"]
+const qualities = { I: "혼자만의 생각과 진심을 소중히 하는", E: "사람 사이의 활기와 표현을 즐기는", S: "작은 변화와 현실적인 배려를 잘 알아차리는", N: "가능성과 감정의 맥락을 넓게 보는", T: "솔직하고 명료하게 문제를 풀어가는", F: "상대의 마음과 관계의 온기를 중요하게 여기는", J: "일관성과 약속을 통해 안정감을 만드는", P: "유연하게 흐름을 읽고 새로운 설렘을 만드는" }
+export const mbtiDescriptions = Object.fromEntries(mbtiTypes.map((type) => [type, `${type}인 당신은 ${qualities[type[0]]} ${qualities[type[1]]} 편이에요. ${qualities[type[2]]} 장점은 관계를 따뜻하게 만드는 힘이 됩니다. 다만 때로는 ${type[3] === "J" ? "정해 둔 방식과 약속을 너무 빠르게 요구할 수 있어요" : "순간의 감정과 가능성에 집중하다가 일관된 관심을 놓칠 수 있어요"}. 상대의 속도를 한 번 더 확인하고 작은 표현을 꾸준히 이어가 보세요.`]))
