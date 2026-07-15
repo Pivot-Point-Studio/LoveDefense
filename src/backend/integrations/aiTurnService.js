@@ -13,7 +13,7 @@ async function invokeWithRetry(requestType, payload, requestId, validate) {
       const { data, error } = await supabase.functions.invoke("evaluate-turn", { body: { requestType, requestId, ...payload }, signal: controller.signal })
       if (error) throw error
       if (!data?.result || data.provider !== "openai") throw new Error("OpenAI 응답이 비어 있습니다.")
-      return { result: data.result, model: data.model }
+      return { result: data.result, model: data.model, retrieval: data.retrieval ?? null }
     } finally {
       clearTimeout(timer)
     }
