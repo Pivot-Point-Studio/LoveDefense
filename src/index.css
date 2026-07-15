@@ -236,6 +236,10 @@ html[data-theme="dark"] .result-orbit { color: #c5abff; border-color: #594b78; b
 html[data-theme="dark"] .splash-screen { color-scheme: dark; }
 
 .appearance-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.account-connected { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 10px 12px; color: #3f8f69; background: #e7f7ed; font-size: 12px; font-weight: 800; }
+.account-actions { display: flex; align-items: center; gap: 8px; }
+.account-signout-button { border: 0; border-radius: 999px; padding: 10px 12px; color: #a14c62; background: #fff0f4; font-size: 12px; font-weight: 700; }
+.google-connect-button { white-space: nowrap; }
 .appearance-row h2 { margin-top: 6px; color: #17212b; font-size: 20px; }
 .theme-toggle { display: inline-flex; min-width: 132px; align-items: center; justify-content: center; gap: 8px; border: 1px solid #d8c8e8; border-radius: 14px; padding: 10px 12px; color: #5f3a83; background: #f8efff; font-size: 12px; font-weight: 700; }
 .theme-toggle-icon { font-size: 17px; line-height: 1; }
@@ -313,6 +317,8 @@ html[data-theme="dark"] .league-card { border-radius: var(--radius-lg); backgrou
 html[data-theme="dark"] .result-orbit { border-color: var(--color-bg-surface-3); color: #b18af2; background: var(--color-bg-surface-1); }
 html[data-theme="dark"] .appearance-section { background: var(--color-bg-surface-1); }
 html[data-theme="dark"] .theme-toggle { border: 0; border-radius: var(--radius-pill); color: var(--color-text-primary); background: var(--color-bg-surface-3); }
+html[data-theme="dark"] .account-connected { color: #6ee7a1; background: rgb(110 231 161 / 12%); }
+html[data-theme="dark"] .account-signout-button { color: #ffb4c9; background: #39242f; }
 html[data-theme="dark"] .stage-intro-modal h1, html[data-theme="dark"] .stage-intro-modal h2, html[data-theme="dark"] .stage-intro-modal p, html[data-theme="dark"] .stage-intro-modal li { color: var(--color-text-primary); }
 html[data-theme="dark"] .stage-intro-baseline { color: #d9c9ff; background: var(--color-bg-surface-3); }
 html[data-theme="dark"] .system-message { border-color: #4b4654; color: var(--color-text-secondary); background: var(--color-bg-surface-3); }
