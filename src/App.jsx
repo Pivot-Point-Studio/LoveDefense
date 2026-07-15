@@ -1525,7 +1525,7 @@ function Chat({
     scrollToLatest(listRef.current);
     const frame = requestAnimationFrame(() => setLatestButton(false));
     return () => cancelAnimationFrame(frame);
-  }, [conversation.messages.length]);
+  }, [conversation.messages.length, locked]);
   useEffect(() => {
     const close = (event) => {
       if (
@@ -1705,6 +1705,7 @@ function Chat({
               onSave={onSaveSuggested}
             />
           ))}
+          {locked && <TypingIndicator partner={partner} />}
           {feedbackNotice && (
             <div className="chat-notice">{feedbackNotice}</div>
           )}
@@ -1919,6 +1920,33 @@ function StageIntroModal({ stageNumber, onConfirm, isGenerating, error }) {
           {isGenerating ? "시나리오 준비 중…" : error ? "다시 시도" : "확인"}
         </button>
       </section>
+    </div>
+  );
+}
+function TypingIndicator({ partner }) {
+  return (
+    <div
+      className={`chat-message-row chat-message-row--partner chat-message-row--${partner.gender ?? "unknown"} typing-indicator-row`}
+      role="status"
+      aria-label={`${partner.nickname}님이 답장을 입력하고 있습니다`}
+    >
+      <div className="message-avatar" aria-hidden="true">
+        {genderIcon(partner.gender)}
+      </div>
+      <div className="message-column">
+        <span className="message-sender">
+          {partner.nickname}
+          {partner.gender && <em>{genderLabel(partner.gender)}</em>}
+        </span>
+        <div
+          className="chat-bubble chat-bubble--partner typing-indicator"
+          aria-hidden="true"
+        >
+          <span />
+          <span />
+          <span />
+        </div>
+      </div>
     </div>
   );
 }
