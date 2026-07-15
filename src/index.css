@@ -344,3 +344,27 @@ html:not([data-theme="dark"]) .chat-bubble--ai .rag-evidence { border-color: #df
 html:not([data-theme="dark"]) .chat-bubble--ai .rag-source-chip { color: #5c3f70; background: #eadcf3; }
 html:not([data-theme="dark"]) .chat-bubble--ai .rag-source-chip small { color: #7c628d; }
 html:not([data-theme="dark"]) .chat-bubble--ai .save-inline-button { border-color: #d5bce3; color: #6f398c; background: #efe1f6; }
+
+/* Chat composer: stable layout across desktop, mobile keyboards, and dark mode. */
+.chat-input textarea { max-height: 128px; resize: none; overflow-y: auto; }
+.chat-input .input-footer { min-width: 0; }
+.chat-input .input-footer small { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.chat-input .input-footer .button { flex: 0 0 auto; white-space: nowrap; }
+.chat-input .input-tools .is-over-limit { color: #c93f5a; font-weight: 800; }
+
+html[data-theme="dark"] .free-input-panel.chat-input { margin: 0; border: 0; border-top: 1px solid var(--color-border-subtle); border-radius: 0; padding: 9px 14px calc(9px + env(safe-area-inset-bottom)); color: var(--color-text-primary); background: var(--color-bg-surface-1); box-shadow: 0 -8px 24px rgb(0 0 0 / 18%); }
+html[data-theme="dark"] .chat-input textarea { min-height: 55px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); color: var(--color-text-primary); background: var(--color-bg-surface-2); caret-color: var(--color-text-primary); }
+html[data-theme="dark"] .chat-input textarea:focus { border-color: #8b68ff; outline: 2px solid rgb(139 104 255 / 28%); outline-offset: 0; }
+html[data-theme="dark"] .chat-input .input-tools, html[data-theme="dark"] .chat-input .input-hint { color: var(--color-text-muted); }
+html[data-theme="dark"] .chat-input .input-error { color: var(--color-error); }
+html[data-theme="dark"] .chat-input .button-primary { color: #fff; background: #7638fa; }
+html[data-theme="dark"] .chat-input .button-primary:not(:disabled):hover { background: #8b68ff; background-image: none; }
+html[data-theme="dark"] .chat-input .button-primary:disabled { color: var(--color-text-disabled); background: var(--color-bg-surface-3); background-image: none; animation: none; }
+html[data-theme="dark"] .chat-input .button-primary[aria-busy="true"] { background-image: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 7%) 45%, transparent 70%); background-size: 220% 100%; animation: dark-surface-loading 1.4s ease-in-out infinite; }
+
+@media (max-width: 620px) {
+  .chat-input { padding-right: 10px; padding-left: 10px; }
+  .chat-input .input-tools { gap: 6px; font-size: 10px; }
+  .chat-input .input-footer { align-items: flex-end; }
+  .chat-input .input-footer .button { min-width: 88px; }
+}
