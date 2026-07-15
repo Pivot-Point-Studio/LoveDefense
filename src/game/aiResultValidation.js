@@ -3,6 +3,8 @@ function validateScores(scores) {
   return scores && keys.every((key) => Number.isFinite(scores[key]) && scores[key] >= 0 && scores[key] <= 100)
 }
 
+const dialogueEndingModes = new Set(["direct_question", "indirect_question", "plain_statement", "emotional_disclosure", "short_reply", "silence", "ellipsis", "boundary_setting", "action_promise", "concrete_request", "apology", "responsibility_acknowledgment", "topic_shift", "sarcasm", "irritated_close", "avoidant_withdrawal", "unresolved_close", "delayed_response_style", "relationship_confirmation", "behavioral_observation"])
+
 const isStringArray = (value, maxItems, maxLength) => Array.isArray(value) && value.length <= maxItems && value.every((item) => typeof item === "string" && [...item].length <= maxLength)
 const validRiskTargets = new Set(["partner", "situation", "self", "other", "none"])
 
@@ -20,4 +22,11 @@ export function validatePartnerDialogue(value) {
   const sentenceCount = dialogue?.split(/[.!?。！？]+/).filter((part) => part.trim()).length ?? 0
   if (!dialogue || [...dialogue].length > 300 || sentenceCount > 2 || /[（(][^）)]*[）)]/.test(dialogue) || /(방어적으로 반응|거리를 둔다|긴장이 풀린다|감정이 상했다|사용자의 답변|점수)/.test(dialogue)) throw new Error("상대방 대사 형식이 올바르지 않습니다.")
   return dialogue
+}
+
+export function validateCombinedTurnResult(value) {
+  validateOpenAIEvaluation(value)
+  const partnerDialogue = validatePartnerDialogue(value)
+  if (!dialogueEndingModes.has(value.endingMode)) throw new Error("OpenAI 종결 방식이 올바르지 않습니다.")
+  return { ...value, partnerDialogue, endingMode: value.endingMode }
 }

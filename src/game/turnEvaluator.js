@@ -1,4 +1,5 @@
 import { clamp } from "./stageModel.js"
+import { classifyEndingMode, validateDialogueDiversity } from "./dialogueDiversity.js"
 
 const words = {
   empathy: ["미안", "서운", "속상", "불안", "힘들", "이해", "마음", "그랬구나", "고마워"],
@@ -85,9 +86,15 @@ export function createRuleFallbackEvaluation(input, stage, turn, hints, fallback
 export function judgment(score) { return score >= 90 ? "매우 적절함" : score >= 75 ? "적절함" : score >= 55 ? "부분적으로 적절함" : score >= 35 ? "아쉬움" : score >= 15 ? "부적절함" : "매우 부적절함" }
 
 const reactionTemplates = {
-  positive: ["그렇게 말해줘서 조금 안심돼. 내 마음도 천천히 더 이야기해볼게.", "내 마음을 알아주려고 한 게 느껴져. 우리 이야기를 조금 더 해보고 싶어."],
-  partial: ["네가 노력한 건 알겠어. 그래도 내 마음이 바로 가라앉지는 않아서 조금 더 듣고 싶어.", "고마워. 아직은 조심스럽지만 우리 이야기를 계속해볼게."],
-  negative: ["지금은 네 말이 잘 들어오지 않아. 조금 진정한 다음에 다시 이야기하고 싶어.", "내 마음이 더 닫히는 것 같아. 당장은 조금 거리를 두고 싶어."],
+  positive: [
+    ["네가 그 부분을 알아차린 건 고마워. 오늘은 이 정도면 마음이 조금 놓여.", "plain_statement"], ["내가 서운했던 이유를 가볍게 넘기지 않은 건 느껴졌어.", "emotional_disclosure"], ["다음 약속에서는 오늘 정한 방식대로 해보자.", "action_promise"], ["응, 그건 네 말이 맞아.", "short_reply"], ["내가 먼저 날카롭게 말한 부분은 미안해.", "apology"]
+  ],
+  partial: [
+    ["네가 노력한 건 알겠어. 그래도 마음이 바로 가라앉지는 않아.", "emotional_disclosure"], ["고마워. 오늘은 여기까지 듣고 조금 정리하고 싶어.", "boundary_setting"], ["그 설명만으로는 아직 빈 곳이 남아 있어.", "unresolved_close"], ["일단 다음에 같은 상황이 오면 다르게 해보자.", "action_promise"], ["응. 알겠어.", "short_reply"]
+  ],
+  negative: [
+    ["지금은 네 말이 잘 들어오지 않아.", "short_reply"], ["이 얘기는 오늘 더 하지 않을게.", "boundary_setting"], ["내가 왜 화났는지는 아직 그대로야.", "unresolved_close"], ["조금 진정한 다음에 다시 보자.", "avoidant_withdrawal"], ["그래, 네 입장에서는 그렇게 보였겠지.", "sarcasm"]
+  ]
 }
 
 function styleReaction(text, partner = {}) {
@@ -97,8 +104,17 @@ function styleReaction(text, partner = {}) {
   return text
 }
 
-export function fallbackReaction(direction, partner = {}, recentMessages = []) {
+export function fallbackReaction(direction, partner = {}, recentMessages = [], diversityContext = {}) {
   const candidates = reactionTemplates[direction] ?? reactionTemplates.partial
-  const recent = new Set(recentMessages.filter((message) => message.sender === "partner").map((message) => message.text))
-  return styleReaction(candidates.find((text) => !recent.has(text)) ?? candidates[0], partner)
+  const recent = recentMessages.filter((message) => message.sender === "partner").map((message) => message.text)
+  const recentEndings = diversityContext.recentEndings ?? []
+  const scored = candidates.map(([text, endingMode], index) => {
+    const check = validateDialogueDiversity(text, { recentPartnerResponses: recent, recentEndings, endingMode, lockedPhrases: diversityContext.lockedPhrases ?? [] })
+    const repeatedMode = recentEndings.slice(0, 3).filter((item) => item.endingMode === endingMode).length
+    return { text, endingMode, index, valid: check.valid, score: (check.valid ? 100 : 0) - repeatedMode * 30 - index }
+  }).sort((a, b) => b.score - a.score)
+  const selected = scored.find((item) => item.valid) ?? scored[0]
+  return styleReaction(selected?.text ?? "지금은 조금 생각할 시간이 필요해.", partner)
 }
+
+export function fallbackEndingMode(text) { return classifyEndingMode(text) }
