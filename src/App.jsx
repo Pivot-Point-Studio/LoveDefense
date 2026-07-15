@@ -1188,6 +1188,7 @@ export default function App() {
     return (
       <Chat
         conversation={activeConversation}
+        user={user}
         partner={partner}
         onChoose={chooseAnswer}
         onFeedback={addFeedbackMessage}
@@ -1494,6 +1495,7 @@ function Practice({ selected, onToggle, onStart }) {
 }
 function Chat({
   conversation,
+  user,
   partner,
   onChoose,
   onFeedback,
@@ -1505,6 +1507,7 @@ function Chat({
 }) {
   const [input, setInput] = useState("");
   const [locked, setLocked] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState(null);
   const [error, setError] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [advice, setAdvice] = useState([]);
@@ -1525,7 +1528,7 @@ function Chat({
     scrollToLatest(listRef.current);
     const frame = requestAnimationFrame(() => setLatestButton(false));
     return () => cancelAnimationFrame(frame);
-  }, [conversation.messages.length]);
+  }, [conversation.messages.length, locked]);
   useEffect(() => {
     const close = (event) => {
       if (
@@ -1549,18 +1552,34 @@ function Chat({
   async function submit(event) {
     event.preventDefault();
     if (locked || introOpen) return;
+    const valid = validateUserInput(input);
+    if (!valid.valid) {
+      setError(valid.message);
+      return;
+    }
+    const submittedText = valid.value;
+    setPendingMessage({
+      id: `pending-${Date.now()}`,
+      sender: "user",
+      senderName: user.nickname,
+      text: submittedText,
+      metadata: { gender: user.gender },
+    });
+    setInput("");
     setLocked(true);
     setError("");
     try {
-      const result = await onChoose(input);
+      const result = await onChoose(submittedText);
       if (result?.invalid || result?.blocked || result?.ignored) {
         setError(result.message ?? "현재 답변을 처리할 수 없어요.");
+        setInput(submittedText);
         return;
       }
-      setInput("");
     } catch {
+      setInput(submittedText);
       setError("메시지를 보내지 못했어요. 잠시 후 다시 시도해 주세요.");
     } finally {
+      setPendingMessage(null);
       setLocked(false);
     }
   }
@@ -1705,6 +1724,10 @@ function Chat({
               onSave={onSaveSuggested}
             />
           ))}
+          {pendingMessage && (
+            <MessageBubble message={pendingMessage} onSave={onSaveSuggested} />
+          )}
+          {locked && <TypingIndicator partner={partner} />}
           {feedbackNotice && (
             <div className="chat-notice">{feedbackNotice}</div>
           )}
@@ -1919,6 +1942,33 @@ function StageIntroModal({ stageNumber, onConfirm, isGenerating, error }) {
           {isGenerating ? "시나리오 준비 중…" : error ? "다시 시도" : "확인"}
         </button>
       </section>
+    </div>
+  );
+}
+function TypingIndicator({ partner }) {
+  return (
+    <div
+      className={`chat-message-row chat-message-row--partner chat-message-row--${partner.gender ?? "unknown"} typing-indicator-row`}
+      role="status"
+      aria-label={`${partner.nickname}님이 답장을 입력하고 있습니다`}
+    >
+      <div className="message-avatar" aria-hidden="true">
+        {genderIcon(partner.gender)}
+      </div>
+      <div className="message-column">
+        <span className="message-sender">
+          {partner.nickname}
+          {partner.gender && <em>{genderLabel(partner.gender)}</em>}
+        </span>
+        <div
+          className="chat-bubble chat-bubble--partner typing-indicator"
+          aria-hidden="true"
+        >
+          <span />
+          <span />
+          <span />
+        </div>
+      </div>
     </div>
   );
 }
