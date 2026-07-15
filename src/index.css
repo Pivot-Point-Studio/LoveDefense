@@ -384,6 +384,25 @@ html[data-theme="dark"] .chat-input .button-primary[aria-busy="true"] { backgrou
 /* Required first-run profile setup. */
 .profile-onboarding-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgb(16 24 26 / 68%); backdrop-filter: blur(8px); }
 .profile-onboarding-modal { width: min(720px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; border-radius: 28px; padding: 26px; color: #26383d; background: #f8fbfa; box-shadow: 0 28px 80px rgb(0 0 0 / 32%); }
+.profile-onboarding-modal { scrollbar-gutter: stable; }
+.tendency-trigger.is-portal > b { color: #89979a; }
+.tendency-menu.is-portal { position: fixed; inset: auto; z-index: 210; max-height: none; overflow: visible; }
+.profile-select-menu.is-long { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tendency-menu.is-portal button.is-selected { color: #403448; background: #fff; }
+.tendency-menu.is-portal button.is-selected:hover, .tendency-menu.is-portal button.is-selected:focus-visible { color: #fff; background: #6d257d; }
+.tendency-menu.is-portal button.is-selected small { color: #82918f; }
+.tendency-menu.is-portal button.is-selected:hover small, .tendency-menu.is-portal button.is-selected:focus-visible small { color: #f3ddef; }
+.profile-summary-card:not(.onboarding-profile-card) .tendency-trigger > b { color: #89979a; }
+.profile-summary-card:not(.onboarding-profile-card) .tendency-menu button.is-selected { color: #403448; background: #fff; }
+.profile-summary-card:not(.onboarding-profile-card) .tendency-menu button.is-selected:hover, .profile-summary-card:not(.onboarding-profile-card) .tendency-menu button.is-selected:focus-visible { color: #fff; background: #6d257d; }
+.profile-summary-card:not(.onboarding-profile-card) .tendency-menu button.is-selected small { color: #82918f; }
+.profile-summary-card:not(.onboarding-profile-card) .tendency-menu button.is-selected:hover small, .profile-summary-card:not(.onboarding-profile-card) .tendency-menu button.is-selected:focus-visible small { color: #f3ddef; }
+.profile-summary-card:not(.onboarding-profile-card) .profile-form select { width: 100%; min-height: 42px; appearance: none; border: 1px solid #dfe9e5; border-radius: 12px; padding: 10px 34px 10px 11px; color: #26383d; background-color: #fbfdfc; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath d='m3.5 5.25 3.5 3.5 3.5-3.5' fill='none' stroke='%2389979a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 11px center; background-size: 14px; }
+html[data-theme="dark"] .profile-summary-card:not(.onboarding-profile-card) .profile-form select { border-color: var(--color-border-subtle); color: var(--color-text-primary); background-color: var(--color-bg-surface-2); }
+html[data-theme="dark"] .tendency-menu.is-portal button.is-selected { color: var(--color-text-primary); background: var(--color-bg-surface-2); }
+html[data-theme="dark"] .tendency-menu.is-portal button.is-selected:hover, html[data-theme="dark"] .tendency-menu.is-portal button.is-selected:focus-visible { color: #fff; background: #71327f; }
+html[data-theme="dark"] .profile-summary-card:not(.onboarding-profile-card) .tendency-menu button.is-selected { color: var(--color-text-primary); background: var(--color-bg-surface-2); }
+html[data-theme="dark"] .profile-summary-card:not(.onboarding-profile-card) .tendency-menu button.is-selected:hover, html[data-theme="dark"] .profile-summary-card:not(.onboarding-profile-card) .tendency-menu button.is-selected:focus-visible { color: #fff; background: #71327f; }
 .profile-onboarding-modal > h1 { margin: 4px 0 6px; font-size: clamp(24px, 4vw, 34px); }
 .profile-onboarding-copy { margin: 0 0 16px; color: #71817f; font-size: 13px; }
 .onboarding-profile-card { margin: 0; }

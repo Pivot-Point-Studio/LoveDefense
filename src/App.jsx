@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { categories } from "./data/scenarios";
 import { bootstrapApp } from "./appBootstrap";
 import {
@@ -2159,30 +2160,54 @@ function League({ progress }) {
     </>
   );
 }
-function TendencyDropdown({ name, defaultValue, onChange }) {
+function TendencyDropdown({ name, defaultValue, onChange, portal = false }) {
   const [value, setValue] = useState(() => normalizeTendency(defaultValue));
   const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState(null);
   const rootRef = useRef(null);
+  const menuRef = useRef(null);
   const selected = tendencyOptions.find((option) => option.value === value);
   useEffect(() => {
     const close = (event) => {
-      if (open && rootRef.current && !rootRef.current.contains(event.target))
+      if (open && rootRef.current && !rootRef.current.contains(event.target) && !menuRef.current?.contains(event.target))
         setOpen(false);
     };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
+  function toggleMenu() {
+    if (!open && portal) {
+      const rect = rootRef.current?.getBoundingClientRect();
+      if (rect) {
+        const menuHeight = 390;
+        const top = window.innerHeight - rect.bottom >= menuHeight
+          ? rect.bottom + 6
+          : Math.max(8, rect.top - menuHeight - 6);
+        setMenuPosition({ top, left: rect.left, width: rect.width });
+      }
+    }
+    setOpen((current) => !current);
+  }
+  const menu = open && (
+    <div className={`tendency-menu ${portal ? "is-portal" : ""}`} role="listbox" aria-label="대화 성향 선택" ref={menuRef} style={portal && menuPosition ? menuPosition : undefined}>
+      {tendencyOptions.map((option) => (
+        <button className={option.value === value ? "is-selected" : ""} type="button" role="option" aria-selected={option.value === value} onClick={() => { setValue(option.value); onChange?.(option.value); setOpen(false); }} key={option.value}>
+          <strong>{option.value}</strong><small>{option.description}</small>
+        </button>
+      ))}
+    </div>
+  );
   return (
     <div className="tendency-field">
       <span className="tendency-field-label">대화 성향</span>
       <div className="tendency-dropdown" ref={rootRef}>
         <input type="hidden" name={name} value={value} />
         <button
-          className="tendency-trigger"
+          className={`tendency-trigger ${portal ? "is-portal" : ""}`}
           type="button"
           aria-haspopup="listbox"
           aria-expanded={open}
-          onClick={() => setOpen((current) => !current)}
+          onClick={toggleMenu}
         >
           <span>
             <strong>{selected.value}</strong>
@@ -2190,32 +2215,59 @@ function TendencyDropdown({ name, defaultValue, onChange }) {
           </span>
           <b aria-hidden="true">⌄</b>
         </button>
-        {open && (
-          <div
-            className="tendency-menu"
-            role="listbox"
-            aria-label="대화 성향 선택"
-          >
-            {tendencyOptions.map((option) => (
-              <button
-                className={option.value === value ? "is-selected" : ""}
-                type="button"
-                role="option"
-                aria-selected={option.value === value}
-                onClick={() => {
-                  setValue(option.value);
-                  onChange?.(option.value);
-                  setOpen(false);
-                }}
-                key={option.value}
-              >
-                <strong>{option.value}</strong>
-                <small>{option.description}</small>
-              </button>
-            ))}
-          </div>
-        )}
+        {portal ? (menu && createPortal(menu, document.body)) : menu}
       </div>
+    </div>
+  );
+}
+
+function ProfileSelectDropdown({ name, defaultValue, options, onChange, portal = false }) {
+  const [value, setValue] = useState(defaultValue);
+  const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState(null);
+  const rootRef = useRef(null);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const close = (event) => {
+      if (open && rootRef.current && !rootRef.current.contains(event.target) && !menuRef.current?.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  function toggleMenu() {
+    if (!open && portal) {
+      const rect = rootRef.current?.getBoundingClientRect();
+      if (rect) {
+        const menuHeight = options.length > 8 ? 360 : 110;
+        const top = window.innerHeight - rect.bottom >= menuHeight
+          ? rect.bottom + 6
+          : Math.max(8, rect.top - menuHeight - 6);
+        setMenuPosition({ top, left: rect.left, width: rect.width });
+      }
+    }
+    setOpen((current) => !current);
+  }
+
+  const menu = open && (
+    <div className={`tendency-menu profile-select-menu ${portal ? "is-portal" : ""} ${options.length > 8 ? "is-long" : ""}`} role="listbox" aria-label={`${name} selection`} ref={menuRef} style={portal && menuPosition ? menuPosition : undefined}>
+      {options.map((option) => (
+        <button className={option.value === value ? "is-selected" : ""} type="button" role="option" aria-selected={option.value === value} onClick={() => { setValue(option.value); onChange?.(option.value); setOpen(false); }} key={option.value}>
+          <strong>{option.label}</strong>
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="tendency-dropdown profile-select-dropdown" ref={rootRef}>
+      <input type="hidden" name={name} value={value} />
+      <button className={`tendency-trigger profile-select-trigger ${portal ? "is-portal" : ""}`} type="button" aria-haspopup="listbox" aria-expanded={open} onClick={toggleMenu}>
+        <span><strong>{options.find((option) => option.value === value)?.label ?? value}</strong></span>
+        <b aria-hidden="true">⌄</b>
+      </button>
+      {portal ? (menu && createPortal(menu, document.body)) : menu}
     </div>
   );
 }
@@ -2225,6 +2277,9 @@ function ProfileEditorFields({
   partner,
   onUserTendencyChange,
   onPartnerTendencyChange,
+  onUserFieldChange,
+  onPartnerFieldChange,
+  stableTendencyOverlay = false,
 }) {
   return (
     <>
@@ -2242,24 +2297,13 @@ function ProfileEditorFields({
         </label>
         <label>
           성별
-          <select name="gender" defaultValue={user.gender}>
-            <option value="male">♂ 남성</option>
-            <option value="female">♀ 여성</option>
-          </select>
+          <ProfileSelectDropdown name="gender" defaultValue={user.gender} options={[{ value: "male", label: "♂ 남성" }, { value: "female", label: "♀ 여성" }]} onChange={(value) => onUserFieldChange?.("gender", value)} portal={stableTendencyOverlay} />
         </label>
         <label>
           MBTI
-          <select name="mbti" defaultValue={user.mbti}>
-            {mbtiTypes.map((type) => (
-              <option key={type}>{type}</option>
-            ))}
-          </select>
+          <ProfileSelectDropdown name="mbti" defaultValue={user.mbti} options={mbtiTypes.map((type) => ({ value: type, label: type }))} onChange={(value) => onUserFieldChange?.("mbti", value)} portal={stableTendencyOverlay} />
         </label>
-        <TendencyDropdown
-          name="tendency"
-          defaultValue={user.tendency}
-          onChange={onUserTendencyChange}
-        />
+        <TendencyDropdown name="tendency" defaultValue={user.tendency} onChange={onUserTendencyChange} portal={stableTendencyOverlay} />
       </div>
       <div className="profile-form-column">
         <h3>상대방 성향</h3>
@@ -2275,24 +2319,13 @@ function ProfileEditorFields({
         </label>
         <label>
           성별
-          <select name="partnerGender" defaultValue={partner.gender}>
-            <option value="male">♂ 남성</option>
-            <option value="female">♀ 여성</option>
-          </select>
+          <ProfileSelectDropdown name="partnerGender" defaultValue={partner.gender} options={[{ value: "male", label: "♂ 남성" }, { value: "female", label: "♀ 여성" }]} onChange={(value) => onPartnerFieldChange?.("gender", value)} portal={stableTendencyOverlay} />
         </label>
         <label>
           MBTI
-          <select name="partnerMbti" defaultValue={partner.mbti}>
-            {mbtiTypes.map((type) => (
-              <option key={type}>{type}</option>
-            ))}
-          </select>
+          <ProfileSelectDropdown name="partnerMbti" defaultValue={partner.mbti} options={mbtiTypes.map((type) => ({ value: type, label: type }))} onChange={(value) => onPartnerFieldChange?.("mbti", value)} portal={stableTendencyOverlay} />
         </label>
-        <TendencyDropdown
-          name="partnerTendency"
-          defaultValue={partner.tendency}
-          onChange={onPartnerTendencyChange}
-        />
+        <TendencyDropdown name="partnerTendency" defaultValue={partner.tendency} onChange={onPartnerTendencyChange} portal={stableTendencyOverlay} />
       </div>
     </>
   );
@@ -2307,6 +2340,8 @@ function ProfilePersonalityCard({
   footer = null,
   className = "",
   formClassName = "",
+  simpleHeart = false,
+  stableTendencyOverlay = false,
 }) {
   const [expanded, setExpanded] = useState(alwaysExpanded);
   const [draftUser, setDraftUser] = useState(user);
@@ -2335,11 +2370,12 @@ function ProfilePersonalityCard({
   }
   function previewProfileChange(event) {
     const { name, value } = event.target;
-    const userFields = { nickname: "nickname", gender: "gender", mbti: "mbti" };
+    const userFields = { nickname: "nickname", gender: "gender", mbti: "mbti", tendency: "tendency" };
     const partnerFields = {
       partnerNickname: "nickname",
       partnerGender: "gender",
       partnerMbti: "mbti",
+      partnerTendency: "tendency",
     };
     if (userFields[name])
       setDraftUser((current) => ({ ...current, [userFields[name]]: value }));
@@ -2374,6 +2410,9 @@ function ProfilePersonalityCard({
             {displayUser.mbti} · {normalizeTendency(displayUser.tendency)}
           </p>
         </div>
+        {simpleHeart ? (
+          <span className="profile-heart" aria-hidden="true">♥</span>
+        ) : (
         <div className="profile-heart-action">
           <button
             className={`profile-heart-button ${heartLoading ? "is-loading" : ""}`}
@@ -2417,6 +2456,7 @@ function ProfilePersonalityCard({
             하트를 클릭해 맞춤형 연애 조언을 확인해보세요!
           </span>
         </div>
+        )}
         <div className="profile-person">
           <span className="profile-gender">
             {genderIcon(displayPartner.gender)}{" "}
@@ -2452,12 +2492,19 @@ function ProfilePersonalityCard({
               onPartnerTendencyChange={(tendency) =>
                 setDraftPartner((current) => ({ ...current, tendency }))
               }
+              onUserFieldChange={(field, value) =>
+                setDraftUser((current) => ({ ...current, [field]: value }))
+              }
+              onPartnerFieldChange={(field, value) =>
+                setDraftPartner((current) => ({ ...current, [field]: value }))
+              }
+              stableTendencyOverlay={stableTendencyOverlay}
             />
             {footer}
           </form>
         )}
       </section>
-      {adviceOpen && (
+      {!simpleHeart && adviceOpen && (
         <div
           className="relationship-advice-backdrop"
           onMouseDown={(event) => {
@@ -2553,6 +2600,8 @@ function ProfileOnboardingModal({ user, partner, saving, error, onSave }) {
           onSubmit={(event) => event.preventDefault()}
           className="onboarding-profile-card"
           formClassName="onboarding-profile-form"
+          simpleHeart
+          stableTendencyOverlay
         />
         {error && (
           <p className="profile-onboarding-error" role="alert">
