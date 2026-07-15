@@ -3,8 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Love Defense" />
-    <title>Love Defense</title>
+    <meta name="description" content="연애 디펜스" />
+    <meta name="theme-color" content="#ffffff" />
+    <script>
+      (() => {
+        const saved = localStorage.getItem("love-defense-theme")
+        const theme = saved === "light" || saved === "dark" ? saved : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+        document.documentElement.dataset.theme = theme
+        document.documentElement.style.colorScheme = theme
+      })()
+    </script>
+    <link rel="icon" href="./src/assets/favicon/favicon.ico" />
+    <link rel="apple-touch-icon" href="./src/assets/favicon/apple-touch-icon.png" />
+    <title>연애 디펜스</title>
   </head>
   <body>
     <div id="root"></div>
